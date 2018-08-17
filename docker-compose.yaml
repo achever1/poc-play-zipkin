@@ -26,5 +26,9 @@ services:
 
   zipkin:
     image: openzipkin/zipkin
+    environment:
+      HTTP_COLLECTOR_ENABLED: "false"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: zipkin
     ports:
     - 9411:9411

@@ -3,12 +3,13 @@ package actors
 import akka.actor.Actor
 import business.ParallelComputer
 import javax.inject.Inject
+import jp.co.bizreach.trace.TraceData
 import jp.co.bizreach.trace.akka.actor.ActorTraceSupport.TraceableActor
 import jp.co.bizreach.trace.play.implicits.ZipkinTraceImplicits
-import jp.co.bizreach.trace.{TraceData, ZipkinTraceServiceLike}
+import utils.ZipkinKafkaTraceService
 
 class ParallelComputerActor @Inject()(computer: ParallelComputer,
-                                      val tracer: ZipkinTraceServiceLike)
+                                      val tracer: ZipkinKafkaTraceService)
     extends Actor
     with TraceableActor
     with ZipkinTraceImplicits {
