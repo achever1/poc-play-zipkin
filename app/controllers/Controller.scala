@@ -4,21 +4,21 @@ import actors.{ComputeCommand, ParallelComputerActor}
 import akka.actor.{ActorSystem, Props}
 import business.ParallelComputer
 import javax.inject._
-import jp.co.bizreach.trace.ZipkinTraceServiceLike
 import jp.co.bizreach.trace.akka.actor.ActorTraceSupport.TraceableActorRef
 import jp.co.bizreach.trace.play.TraceWSClient
 import jp.co.bizreach.trace.play.implicits.ZipkinTraceImplicits
 import play.api.libs.ws.ahc.AhcCurlRequestLogger
 import play.api.mvc._
+import utils.{KafkaTraceWsClient, ZipkinKafkaTraceService}
 
 import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class Controller @Inject()(
     cc: ControllerComponents,
-    ws: TraceWSClient,
+    ws: KafkaTraceWsClient,
     parallelComputer: ParallelComputer,
     system: ActorSystem
-)(implicit ec: ExecutionContext, val tracer: ZipkinTraceServiceLike)
+)(implicit ec: ExecutionContext, val tracer: ZipkinKafkaTraceService)
     extends AbstractController(cc)
     with ZipkinTraceImplicits {
 
@@ -33,7 +33,6 @@ class Controller @Inject()(
   }
 
   def endpoint2 = Action.async { implicit request =>
-
     // Parallel computation with futures
     tracer.traceFuture("Compute globally") { _ =>
       parallelComputer.compute
@@ -49,7 +48,9 @@ class Controller @Inject()(
   }
 
   def endpoint3() = Action.async { implicit request =>
-    tracer.trace("Waiting thread 100 ms") { _ => Thread.sleep(100) }
+    tracer.trace("Waiting thread 100 ms") { _ =>
+      Thread.sleep(100)
+    }
     Future(Ok("endpoint3 sending reply"))
   }
 

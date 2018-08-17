@@ -13,6 +13,7 @@ libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.5.13"
 libraryDependencies += ws
 libraryDependencies += "jp.co.bizreach" %% "play-zipkin-tracing-play" % "2.1.0"
 libraryDependencies += "jp.co.bizreach" %% "play-zipkin-tracing-akka" % "2.1.0"
+libraryDependencies += "io.zipkin.reporter2" % "zipkin-sender-kafka11" % "2.7.7"
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "org.talend.controllers._"

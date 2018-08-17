@@ -2,13 +2,14 @@ package business
 
 import akka.actor.ActorSystem
 import javax.inject.Inject
-import jp.co.bizreach.trace.{TraceData, ZipkinTraceServiceLike}
+import jp.co.bizreach.trace.TraceData
+import utils.ZipkinKafkaTraceService
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ParallelComputer @Inject()(
     system: ActorSystem,
-    val tracer: ZipkinTraceServiceLike)(implicit ec: ExecutionContext) {
+    val tracer: ZipkinKafkaTraceService)(implicit ec: ExecutionContext) {
 
   def compute(implicit parentTraceData: TraceData) =
     Future
