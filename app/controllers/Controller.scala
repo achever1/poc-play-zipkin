@@ -1,5 +1,6 @@
 package controllers
 
+import business.ParallelComputer
 import javax.inject._
 import jp.co.bizreach.trace.ZipkinTraceServiceLike
 import jp.co.bizreach.trace.play.TraceWSClient
@@ -12,7 +13,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class Controller @Inject()(
     cc: ControllerComponents,
     ws: TraceWSClient,
-    val tracer: ZipkinTraceServiceLike)(implicit ec: ExecutionContext)
+    val tracer: ZipkinTraceServiceLike,
+    parallelComputer: ParallelComputer
+)(implicit ec: ExecutionContext)
     extends AbstractController(cc)
     with ZipkinTraceImplicits {
 
@@ -24,6 +27,10 @@ class Controller @Inject()(
   }
 
   def endpoint2 = Action.async { implicit request =>
+    tracer.traceFuture("global computation") { _ =>
+      parallelComputer.compute
+    }
+
     ws.url("rest client call", "http://s3:9000/endpoint3")
       .withRequestFilter(AhcCurlRequestLogger())
       .get()
@@ -31,7 +38,7 @@ class Controller @Inject()(
   }
 
   def endpoint3() = Action.async { implicit request =>
-    Thread.sleep(1000)
+    tracer.trace("Waiting thread 1s") { _ => Thread.sleep(1000) }
     Future(Ok("called by called !"))
   }
 
