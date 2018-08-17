@@ -1,8 +1,11 @@
 package controllers
 
+import actors.{ComputeCommand, ParallelComputerActor}
+import akka.actor.{ActorSystem, Props}
 import business.ParallelComputer
 import javax.inject._
 import jp.co.bizreach.trace.ZipkinTraceServiceLike
+import jp.co.bizreach.trace.akka.actor.ActorTraceSupport.TraceableActorRef
 import jp.co.bizreach.trace.play.TraceWSClient
 import jp.co.bizreach.trace.play.implicits.ZipkinTraceImplicits
 import play.api.libs.ws.ahc.AhcCurlRequestLogger
@@ -13,11 +16,14 @@ import scala.concurrent.{ExecutionContext, Future}
 class Controller @Inject()(
     cc: ControllerComponents,
     ws: TraceWSClient,
-    val tracer: ZipkinTraceServiceLike,
-    parallelComputer: ParallelComputer
-)(implicit ec: ExecutionContext)
+    parallelComputer: ParallelComputer,
+    system: ActorSystem
+)(implicit ec: ExecutionContext, val tracer: ZipkinTraceServiceLike)
     extends AbstractController(cc)
     with ZipkinTraceImplicits {
+
+  val props = Props(new ParallelComputerActor(parallelComputer, tracer))
+  val actor = TraceableActorRef(system.actorOf(props, "ComputerActor"))
 
   def endpoint1() = Action.async { implicit request =>
     ws.url("rest client call", "http://s2:9000/endpoint2")
@@ -27,9 +33,14 @@ class Controller @Inject()(
   }
 
   def endpoint2 = Action.async { implicit request =>
-    tracer.traceFuture("global computation") { _ =>
+
+    // Parallel computation with futures
+    tracer.traceFuture("Compute globally") { _ =>
       parallelComputer.compute
     }
+
+    // Parallel computation delegated to an actor
+    actor ! ComputeCommand()
 
     ws.url("rest client call", "http://s3:9000/endpoint3")
       .withRequestFilter(AhcCurlRequestLogger())
@@ -38,8 +49,8 @@ class Controller @Inject()(
   }
 
   def endpoint3() = Action.async { implicit request =>
-    tracer.trace("Waiting thread 1s") { _ => Thread.sleep(1000) }
-    Future(Ok("called by called !"))
+    tracer.trace("Waiting thread 100 ms") { _ => Thread.sleep(100) }
+    Future(Ok("endpoint3 sending reply"))
   }
 
 }
